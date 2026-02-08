@@ -144,7 +144,7 @@ Pull all chapters and tell me which ones have images missing alt text.
 Pull chapter 25 and change every instance of "Artificial Intelligence" to "AI" in the body text, then push it back.
 ```
 
-**Tip:** If you're using Claude Code, the included `CLAUDE.md` file gives Claude automatic context about your setup every time you work in this folder.
+**Tip:** If you're using Claude Code, create a `CLAUDE.md` file in this folder to give Claude automatic context about your book and setup every time you work here. Ask Claude Code to generate one for you based on your configuration.
 
 ### With OpenAI Codex
 
