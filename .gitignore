@@ -1,0 +1,13 @@
+# Credentials
+.env
+
+# Pulled chapter files (local working copies)
+# Each user pulls their own book's chapters
+*/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
