@@ -1,6 +1,6 @@
 # Pressbooks CLI
 
-A command-line tool for managing [Pressbooks](https://pressbooks.com/) textbook content. Pull chapters locally, edit them with AI coding assistants, and push updates back — including automated WCAG 2.1 accessibility remediation.
+A command-line tool for managing [Pressbooks](https://pressbooks.com/) textbook content. Pull chapters locally, edit them with AI coding assistants, and push updates back, including automated WCAG 2.1 accessibility remediation.
 
 Built for higher ed faculty and instructional designers who maintain OER textbooks on Pressbooks and want a faster, more powerful editing workflow.
 
