@@ -150,10 +150,6 @@ Pull chapter 25 and change every instance of "Artificial Intelligence" to "AI" i
 
 The same workflow applies — point Codex at this folder and ask it to run the script and edit chapter files.
 
-### Setting up from scratch with an AI assistant
-
-If you'd rather have the AI walk you through the full setup, see [Pressbooks API Setup Guide.md](Pressbooks%20API%20Setup%20Guide.md) for a step-by-step tutorial designed for non-technical users.
-
 ## Accessibility Remediation
 
 One of the most useful applications is automated WCAG 2.1 accessibility fixes. AI assistants can scan chapter HTML and fix common issues:
