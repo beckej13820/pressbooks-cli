@@ -4,6 +4,8 @@
 # Pulled chapter files (local working copies)
 # Each user pulls their own book's chapters
 */
+!docs/
+!docs/*.md
 
 # macOS
 .DS_Store

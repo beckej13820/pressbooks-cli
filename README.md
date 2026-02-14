@@ -164,6 +164,10 @@ One of the most useful applications is automated WCAG 2.1 accessibility fixes. A
 | Inline styles | Best practice | `style="font-weight: 400"` removed in favor of CSS |
 | Missing table headers | SC 1.3.1 (A) | `<td>` in header rows converted to `<th scope="col">` |
 
+For an approval-based workflow (audit table, batch approvals, and controlled push process), see:
+
+- `docs/ACCESSIBILITY_APPROVAL_WORKFLOW.md`
+
 ### Example: Full accessibility pass
 
 ```

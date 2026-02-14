@@ -169,6 +169,17 @@ Review issues one-by-one or in batches:
 
 No edits should be applied until explicitly approved.
 
+### Required Decision Gate: `_blank` Link Behavior
+
+For findings related to links opening new windows/tabs, do not auto-apply edits.
+Before changing any `target="_blank"` behavior, ask and record which option is approved:
+
+1. Keep `target="_blank"` and add a clear warning in link text/label.
+2. Remove `target="_blank"` so links open in the same tab/window.
+3. Leave unchanged for editorial reasons.
+
+Record the decision in the batch artifact before applying any link changes.
+
 ## 5. Bulk-Approval Pattern
 
 When the user approves a batch:
@@ -271,4 +282,65 @@ Then use the markdown summary for batch approvals and the JSON manifest for auto
 - Final pass/fail checklist
 - Chapter IDs pushed and resulting URLs/status
 
+## 12. Final Deliverable: Narrative Audit Trail Report
+
+For each approved remediation batch, produce a final narrative report that a nontechnical reader can follow.
+
+Save report to:
+
+- `<book-folder>/remediation_audit_trail_report.md`
+
+Required sections:
+
+1. **Scope and Goal**
+- What was reviewed (book/folder, chapter range, issue class).
+- Why the remediation was needed.
+
+2. **First Scan Results (Before Changes)**
+- Include scan date/time and exact command(s).
+- Include a results table with:
+  - check name,
+  - files affected,
+  - issue count,
+  - artifact path (manifest/findings file).
+
+3. **Remediation Narrative (What Changed)**
+- Short plain-language summary of the editorial/accessibility intent.
+- Technical summary of the change pattern (e.g., HTML/link pattern updates).
+
+4. **Change Tables (All Changes)**
+- Include a table covering all changed entries.
+- Minimum columns:
+  - ID,
+  - file:line,
+  - issue type,
+  - before,
+  - after,
+  - status.
+- If the full table is large, place it in an appendix within the same report and reference it from the summary.
+
+5. **Summative Scan Results (After Changes)**
+- Re-run the same scans used in the first scan.
+- Include a pass/fail table with counts after remediation.
+- Explicitly call out unresolved items, if any.
+
+6. **Push/Publish Log**
+- List chapter IDs pushed and resulting status/URL.
+
+7. **Approval Statement**
+- Record who approved and when (if available), or note "approved in chat".
+
+Recommended command snippets:
+
+```bash
+# first scan (example for URL-as-link-text)
+rg -n -P '<a\b[^>]*>\s*https?://[^<]+' <book-folder>/*.html > <book-folder>/image_audit/url_as_link_text_findings.txt
+
+# summative scan (same check after remediation)
+rg -n -P '<a\b[^>]*>\s*https?://[^<]+' <book-folder>/*.html | wc -l
+```
+
+Deliverable requirement:
+
+- Do not close remediation work until this narrative audit trail report is created and saved.
 This creates a repeatable, reviewable remediation trail for future books.
