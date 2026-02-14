@@ -45,7 +45,11 @@ def get_config():
         print("  Add a line like: PRESSBOOKS_URL=https://yourschool.pressbooks.pub/your-book-name")
         sys.exit(1)
     book_url = book_url.rstrip("/")
-    slug = urlparse(book_url).path.strip("/").split("/")[-1]
+    parsed = urlparse(book_url)
+    path_slug = parsed.path.strip("/").split("/")[-1]
+    # Single-book domains can have no path (e.g., https://book.example.edu/).
+    # Fall back to the hostname so local chapter files stay namespaced.
+    slug = path_slug or (parsed.netloc.split(":")[0] if parsed.netloc else "pressbooks-book")
     return {
         "book_url": book_url,
         "api_base": f"{book_url}/wp-json/pressbooks/v2",
