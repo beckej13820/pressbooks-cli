@@ -6,9 +6,9 @@ Pull chapters, edit content, and push updates back to Pressbooks.
 
 Usage:
     python pressbooks_api.py toc                    # Show table of contents
-    python pressbooks_api.py pull <chapter_id>      # Pull chapter to local HTML file
-    python pressbooks_api.py push <chapter_id>      # Push local HTML file back to Pressbooks
-    python pressbooks_api.py pull-all               # Pull all chapters locally
+    python pressbooks_api.py pull <content_id>      # Pull chapter/front-matter/back-matter item
+    python pressbooks_api.py push <content_id>      # Push local HTML file back to Pressbooks
+    python pressbooks_api.py pull-all               # Pull all book content locally
 
 Configuration:
     Add your book URL and credentials to the .env file:
@@ -71,9 +71,7 @@ def get_auth():
 
 def get_toc():
     cfg = get_config()
-    r = requests.get(f"{cfg['api_base']}/toc")
-    r.raise_for_status()
-    toc = r.json()
+    toc = fetch_toc(cfg)
 
     print(f"\n=== {cfg['slug']} — Table of Contents ===\n")
 
@@ -97,47 +95,89 @@ def get_toc():
         print()
 
 
-def pull_chapter(chapter_id, auth=None):
+def fetch_toc(cfg=None):
+    if cfg is None:
+        cfg = get_config()
+    r = requests.get(f"{cfg['api_base']}/toc")
+    r.raise_for_status()
+    return r.json()
+
+
+def endpoint_from_toc_id(content_id, toc):
+    for item in toc.get("front-matter", []):
+        if item.get("id") == content_id:
+            return "front-matter"
+
+    for part in toc.get("parts", []):
+        for item in part.get("chapters", []):
+            if item.get("id") == content_id:
+                return "chapters"
+
+    for item in toc.get("back-matter", []):
+        if item.get("id") == content_id:
+            return "back-matter"
+
+    return None
+
+
+def endpoint_label(endpoint):
+    if endpoint == "chapters":
+        return "chapter"
+    if endpoint == "front-matter":
+        return "front matter"
+    if endpoint == "back-matter":
+        return "back matter"
+    return "content"
+
+
+def pull_chapter(content_id, auth=None):
     cfg = get_config()
-    r = requests.get(f"{cfg['api_base']}/chapters/{chapter_id}")
+    toc = fetch_toc(cfg)
+    endpoint = endpoint_from_toc_id(content_id, toc)
+    if endpoint is None:
+        print(f"Error: ID {content_id} was not found in the table of contents.")
+        sys.exit(1)
+
+    r = requests.get(f"{cfg['api_base']}/{endpoint}/{content_id}")
     r.raise_for_status()
     chapter = r.json()
 
     title = chapter["title"]["rendered"]
     content = chapter["content"]["rendered"]
-    slug = chapter.get("slug", f"chapter-{chapter_id}")
+    slug = chapter.get("slug", f"content-{content_id}")
 
     cfg["chapters_dir"].mkdir(parents=True, exist_ok=True)
-    filepath = cfg["chapters_dir"] / f"{chapter_id}_{slug}.html"
+    filepath = cfg["chapters_dir"] / f"{content_id}_{slug}.html"
     filepath.write_text(content, encoding="utf-8")
 
     # Save metadata alongside
     meta = {
-        "id": chapter_id,
+        "id": content_id,
+        "type": endpoint,
         "title": title,
         "slug": slug,
         "status": chapter.get("status"),
         "link": chapter.get("link"),
     }
-    meta_path = cfg["chapters_dir"] / f"{chapter_id}_{slug}.json"
+    meta_path = cfg["chapters_dir"] / f"{content_id}_{slug}.json"
     meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
-    print(f"Pulled: [{chapter_id}] {title}")
+    print(f"Pulled {endpoint_label(endpoint)}: [{content_id}] {title}")
     print(f"  HTML: {filepath}")
     print(f"  Meta: {meta_path}")
     return filepath
 
 
-def push_chapter(chapter_id, auth=None):
+def push_chapter(content_id, auth=None):
     cfg = get_config()
     if auth is None:
         auth = get_auth()
 
     # Find the local HTML file
-    matches = list(cfg["chapters_dir"].glob(f"{chapter_id}_*.html"))
+    matches = list(cfg["chapters_dir"].glob(f"{content_id}_*.html"))
     if not matches:
-        print(f"Error: No local file found for chapter {chapter_id}")
-        print(f"  Run 'pull {chapter_id}' first.")
+        print(f"Error: No local file found for content ID {content_id}")
+        print(f"  Run 'pull {content_id}' first.")
         sys.exit(1)
 
     filepath = matches[0]
@@ -146,16 +186,27 @@ def push_chapter(chapter_id, auth=None):
     # Load metadata for title
     meta_path = filepath.with_suffix(".json")
     title = None
+    endpoint = None
     if meta_path.exists():
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
         title = meta.get("title")
+        endpoint = meta.get("type")
+
+    if endpoint not in {"chapters", "front-matter", "back-matter"}:
+        toc = fetch_toc(cfg)
+        endpoint = endpoint_from_toc_id(content_id, toc)
+
+    if endpoint is None:
+        print(f"Error: Could not determine content type for ID {content_id}.")
+        print("  Pull the item again so metadata includes its type.")
+        sys.exit(1)
 
     data = {"content": content}
     if title:
         data["title"] = title
 
     r = requests.post(
-        f"{cfg['api_base']}/chapters/{chapter_id}",
+        f"{cfg['api_base']}/{endpoint}/{content_id}",
         json=data,
         auth=auth,
     )
@@ -171,24 +222,26 @@ def push_chapter(chapter_id, auth=None):
 
     r.raise_for_status()
     result = r.json()
-    print(f"Pushed: [{chapter_id}] {result['title']['rendered']}")
+    print(f"Pushed {endpoint_label(endpoint)}: [{content_id}] {result['title']['rendered']}")
     print(f"  Status: {result.get('status')}")
     print(f"  Link: {result.get('link')}")
 
 
 def pull_all():
     cfg = get_config()
-    r = requests.get(f"{cfg['api_base']}/toc")
-    r.raise_for_status()
-    toc = r.json()
+    toc = fetch_toc(cfg)
 
-    chapter_ids = []
+    content_ids = []
+    for item in toc.get("front-matter", []):
+        content_ids.append(item["id"])
     for part in toc.get("parts", []):
         for ch in part.get("chapters", []):
-            chapter_ids.append(ch["id"])
+            content_ids.append(ch["id"])
+    for item in toc.get("back-matter", []):
+        content_ids.append(item["id"])
 
-    print(f"Pulling {len(chapter_ids)} chapters...\n")
-    for cid in chapter_ids:
+    print(f"Pulling {len(content_ids)} items (front matter, chapters, back matter)...\n")
+    for cid in content_ids:
         pull_chapter(cid)
     print(f"\nDone. Files saved to: {cfg['chapters_dir']}")
 
